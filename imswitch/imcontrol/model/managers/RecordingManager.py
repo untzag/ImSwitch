@@ -173,7 +173,8 @@ class RecordingWorker(Worker):
                             currentRecTime = time.time() - start
                 self.__recordingManager.sigRecordingTimeUpdated.emit(0)
             else:
-                while self.__recordingManager.record:
+                shouldStop = False
+                while True:
                     for detectorName in self.detectorNames:
                         newFrames = self._getNewFrames(detectorName)
                         n = len(newFrames)
@@ -183,6 +184,12 @@ class RecordingWorker(Worker):
                             dataset.resize(n + it, axis=0)
                             dataset[it:it + n, :, :] = newFrames
                             currentFrame[detectorName] += n
+
+                    if shouldStop:
+                        break
+
+                    if not self.__recordingManager.record:
+                        shouldStop = True  # Enter loop one final time, then stop
         finally:
             for detectorName, file in files.items():
                 if self.saveMode == SaveMode.RAM or self.saveMode == SaveMode.DiskAndRAM:
